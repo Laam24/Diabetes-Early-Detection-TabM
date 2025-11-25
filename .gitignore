@@ -1,0 +1,17 @@
+# Ignore the virtual environment (thousands of system files)
+venv/
+env/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore massive raw data (Standard research practice is to link to the source, not upload it)
+data_raw/
+data_processed/
+
+# Ignore IDE settings
+.vscode/
+
+# Ignore system files
+.DS_Store

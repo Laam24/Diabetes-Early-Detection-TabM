@@ -8,12 +8,12 @@ We utilize a **Tabular Multi-prediction (TabM)** architecture tailored for time-
 ## 📊 Key Results
 The model predicts glucose levels **15 minutes into the future**.
 
-| Metric | Baseline (FP32) | Optimized (FP16) |
-| :--- | :--- | :--- |
-| **RMSE** | 6.72 mg/dL | 6.72 mg/dL |
-| **Hypo Recall** (Safety) | 88.8% | 88.8% |
-| **Hyper Recall** (Detection) | 96.1% | 96.1% |
-| **Model Size** | ~16 KB | ~10 KB |
+| Metric | Baseline (FP32) | Optimized (FP16) | Impact |
+| :--- | :--- | :--- | :--- |
+| **RMSE** (Error) | 7.87 mg/dL | 7.93 mg/dL | Negligible Change |
+| **Hypo Recall** (Safety) | **96.0%** | **96.0%** | **0% Loss (Perfect Retention)** |
+| **Hyper Recall** (Detection) | 94.2% | 94.0% | -0.2% Drop |
+| **Model Size** | 16.57 KB | 10.27 KB | **38.0% Reduction** |
 
 ## 📂 Project Structure
 - `src/`: Source code for data processing, model definition, training, and quantization.

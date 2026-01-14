@@ -1,12 +1,18 @@
-# Early Detection of Hypoglycemia using Quantized TabM
+# Q-TabM: Resource-Efficient Early Detection of Diabetic Attacks
+
+![Project Status](https://img.shields.io/badge/Status-Research_Complete-success)
+![Framework](https://img.shields.io/badge/Framework-PyTorch_|_FastAPI-orange)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
 ## 📌 Research Abstract
-This project implements a lightweight Deep Learning framework for the early detection of diabetic attacks (Hypoglycemia and Hyperglycemia) using Continuous Glucose Monitoring (CGM) data. 
+This project implements a lightweight Deep Learning framework (**Q-TabM**) for the early detection of diabetic attacks (Hypoglycemia and Hyperglycemia) using Continuous Glucose Monitoring (CGM) data. 
 
-We utilize a **Tabular Multi-prediction (TabM)** architecture tailored for time-series forecasting. To ensure feasibility for resource-constrained wearable devices (Edge AI), the model is optimized using **FP16 Quantization**, achieving a **38% reduction in memory footprint** with zero loss in predictive accuracy.
+To address the limitations of cloud-dependent solutions, we utilize a **Tabular Multi-prediction (TabM)** architecture tailored for time-series forecasting. The model is optimized using **FP16 Quantization**, achieving a **38% reduction in memory footprint** (~10 KB) with **zero loss** in predictive accuracy, making it suitable for deployment on resource-constrained wearable hardware (TinyML/Edge AI).
+
+---
 
 ## 📊 Key Results
-The model predicts glucose levels **15 minutes into the future**.
+The model forecasts glucose levels **15 minutes into the future** to provide an early warning window.
 
 | Metric | Baseline (FP32) | Optimized (FP16) | Impact |
 | :--- | :--- | :--- | :--- |
@@ -15,22 +21,83 @@ The model predicts glucose levels **15 minutes into the future**.
 | **Hyper Recall** (Detection) | 94.2% | 94.0% | -0.2% Drop |
 | **Model Size** | 16.57 KB | 10.27 KB | **38.0% Reduction** |
 
-## 📂 Project Structure
-- `src/`: Source code for data processing, model definition, training, and quantization.
-- `notebooks/`: Full research pipeline including EDA, LOSO Validation, and Visualization.
-- `models/`: Saved trained models (.pth).
+### Visual Validation
+The model correctly tracks glucose trends into and out of danger zones without false oscillations.
 
-## ⚙️ Methodology
+![Prediction Plot](figures/prediction_plot.png)
+
+---
+
+## 💻 Web Interface (Demo)
+This repository includes a **FastAPI** web server and a **Simulated Wearable Dashboard** to demonstrate the model in real-time.
+
+### 1. Wearable Simulator (Manual Mode)
+Simulates a user entering their recent glucose history. The model predicts the future trend and triggers **color-coded alerts** (Red for Hypo, Orange for Hyper).
+
+![Simulator UI](figures/ui_simulator.png)
+
+### 2. Research Validator (Batch Mode)
+Upload raw patient data (`.xls`/`.csv`) to run the full preprocessing pipeline, calculate clinical metrics, and visualize the forecast.
+
+![Validator UI](figures/ui_validator.png)
+
+---
+
+## ⚙️ Methodology Pipeline
 1.  **Data:** Shanghai T1DM Dataset (Minimally Invasive CGM).
-2.  **Preprocessing:** Sliding Window approach (Lag Features) with Linear Interpolation.
-3.  **Model:** TabM Regressor with Batch Ensemble layers.
-4.  **Validation:** Leave-One-Subject-Out (LOSO) to ensure patient generalization.
+2.  **Preprocessing:** Sliding Window approach (`t`, `t-15`, `t-30`, `t-45`) with Linear Interpolation.
+3.  **Model:** TabM Regressor with Batch Ensemble layers ($K=4$).
+4.  **Validation:** Leave-One-Subject-Out (LOSO) cross-validation on 12 patients.
 5.  **Optimization:** Post-Training Quantization (FP16).
 
-## 🚀 How to Run
-1.  Install dependencies:
+![Methodology](figures/proposed_methodology_flowchart.png)
+
+---
+
+## 🚀 How to Run Locally
+
+### Prerequisites
+*   Python 3.8+
+*   Git
+
+### Installation
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Laam24/Diabetes-Early-Detection-TabM.git
+    cd Diabetes-Early-Detection-TabM
+    ```
+
+2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-2.  Download the **Shanghai T1DM Dataset** and place it in `data_raw/Shanghai_T1DM/`.
-3.  Run the full pipeline notebook: `notebooks/Full_Research_Project.ipynb`
+
+3.  **Start the Inference Server:**
+    ```bash
+    cd src
+    uvicorn main:app --reload
+    ```
+    *The server will start at `http://127.0.0.1:8000`*
+
+4.  **Launch the Dashboard:**
+    *   Navigate to the `web_interface` folder.
+    *   Double-click `index.html` to open it in your browser.
+
+---
+
+## 📂 Project Structure
+
+├── data_raw/ # (Not uploaded) Place Shanghai T1DM dataset here
+├── data_processed/ # Generated CSVs
+├── figures/ # Research plots and UI screenshots
+├── models/ # Trained PyTorch models (.pth)
+├── notebooks/ # Jupyter Notebooks for EDA and Training
+├── src/ # Source Code
+│ ├── inference_engine.py # Model definition & metrics
+│ ├── main.py # FastAPI Backend
+│ ├── process_data.py # Data pipeline script
+│ └── quantize.py # Quantization script
+└── web_interface/ # HTML/JS Frontend
+
+## 📜 Citation & References
+If you use this work, please reference the Shanghai T1DM Dataset and the TabM architecture.

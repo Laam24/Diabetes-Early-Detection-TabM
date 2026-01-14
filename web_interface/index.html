@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-TabM Research Demo</title>
+    <!-- Load Chart.js for the graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Header */
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #2c3e50; margin-bottom: 5px; }
+        p.subtitle { color: #7f8c8d; font-size: 1.1em; }
+
+        /* Cards */
+        .card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        h2 { border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-top: 0; color: #34495e; font-size: 1.4em; }
+
+        /* Simulator Styles */
+        .input-group { display: flex; gap: 15px; justify-content: center; margin: 20px 0; }
+        .input-box { display: flex; flex-direction: column; width: 120px; }
+        label { font-size: 0.85em; color: #7f8c8d; margin-bottom: 5px; font-weight: 600; }
+        input[type="number"] { padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px; font-size: 1.1em; text-align: center; }
+        
+        button { background-color: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 5px; font-size: 1em; cursor: pointer; transition: 0.3s; width: 100%; }
+        button:hover { background-color: #2980b9; }
+        
+        .result-box { margin-top: 20px; padding: 15px; border-radius: 5px; text-align: center; display: none; }
+        .result-val { font-size: 2em; font-weight: bold; }
+        .result-status { font-size: 1.2em; margin-top: 5px; }
+
+        /* Status Colors */
+        .status-green { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-red { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+        /* Batch Upload Styles */
+        .upload-area { border: 2px dashed #bdc3c7; padding: 20px; text-align: center; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        .upload-area:hover { border-color: #3498db; background: #f0f8ff; }
+        
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .metric-card { background: #f8f9fa; padding: 15px; text-align: center; border-radius: 5px; border: 1px solid #dee2e6; }
+        .metric-val { display: block; font-size: 1.5em; font-weight: bold; color: #2c3e50; }
+        .metric-label { font-size: 0.9em; color: #7f8c8d; }
+
+        canvas { margin-top: 20px; max-height: 400px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Q-TabM: Diabetes Early Warning System</h1>
+        <p class="subtitle">Research Demonstration | FP16 Quantized Model (10 KB)</p>
+    </header>
+
+    <!-- SECTION 1: MANUAL SIMULATOR -->
+    <div class="card">
+        <h2>⌚ Wearable Simulator (Manual Entry)</h2>
+        <p>Enter the last 45 minutes of glucose history to predict the next 15 minutes.</p>
+        
+        <div class="input-group">
+            <div class="input-box"><label>t-45 min</label><input type="number" id="g4" placeholder="90" value="90"></div>
+            <div class="input-box"><label>t-30 min</label><input type="number" id="g3" placeholder="85" value="88"></div>
+            <div class="input-box"><label>t-15 min</label><input type="number" id="g2" placeholder="80" value="82"></div>
+            <div class="input-box"><label>Current (t)</label><input type="number" id="g1" placeholder="75" value="76"></div>
+        </div>
+
+        <button onclick="predictManual()">Predict Future Glucose</button>
+
+        <div id="manualResult" class="result-box">
+            <div class="result-val" id="predVal">--</div>
+            <div class="result-status" id="predStatus">Waiting for input...</div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: RESEARCH VALIDATOR -->
+    <div class="card">
+        <h2>📉 Research Validator (Batch File)</h2>
+        <p>Upload a raw patient file (.xls/.csv) to validate model performance and visualize trends.</p>
+        
+        <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" style="margin-bottom: 15px;">
+        <button onclick="uploadBatch()" style="background-color: #27ae60;">Run Research Validation Pipeline</button>
+
+        <!-- Updated Metrics Display (3x3 Grid) -->
+        <div id="metricsPanel" style="display:none; margin-top:20px;">
+            
+            <!-- Global Stats -->
+            <h3 style="margin-bottom: 10px; color: #2c3e50; font-size: 1.1em;">Global Performance</h3>
+            <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="metric-card"><span class="metric-val" id="mRMSE">--</span><span class="metric-label">RMSE (mg/dL)</span></div>
+                <div class="metric-card"><span class="metric-val" id="mAcc">--</span><span class="metric-label">Overall Accuracy</span></div>
+            </div>
+
+            <!-- Hypo Stats -->
+            <h3 style="margin-bottom: 10px; color: #c0392b; font-size: 1.1em; margin-top: 15px;">Hypoglycemia (Safety)</h3>
+            <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="metric-card"><span class="metric-val" id="mHypoPrec">--</span><span class="metric-label">Precision</span></div>
+                <div class="metric-card"><span class="metric-val" id="mHypoRec">--</span><span class="metric-label">Recall</span></div>
+                <div class="metric-card"><span class="metric-val" id="mHypoF1">--</span><span class="metric-label">F1 Score</span></div>
+            </div>
+
+            <!-- Hyper Stats -->
+            <h3 style="margin-bottom: 10px; color: #d35400; font-size: 1.1em; margin-top: 15px;">Hyperglycemia (Detection)</h3>
+            <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="metric-card"><span class="metric-val" id="mHyperPrec">--</span><span class="metric-label">Precision</span></div>
+                <div class="metric-card"><span class="metric-val" id="mHyperRec">--</span><span class="metric-label">Recall</span></div>
+                <div class="metric-card"><span class="metric-val" id="mHyperF1">--</span><span class="metric-label">F1 Score</span></div>
+            </div>
+
+        </div>
+
+        <!-- Graph -->
+        <div style="position: relative; width: 100%;">
+            <canvas id="predictionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. MANUAL PREDICTION LOGIC ---
+    async function predictManual() {
+        const g1 = parseFloat(document.getElementById('g1').value);
+        const g2 = parseFloat(document.getElementById('g2').value);
+        const g3 = parseFloat(document.getElementById('g3').value);
+        const g4 = parseFloat(document.getElementById('g4').value);
+
+        const payload = { readings: [g1, g2, g3, g4] };
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/predict_manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            
+            const box = document.getElementById('manualResult');
+            const val = document.getElementById('predVal');
+            const status = document.getElementById('predStatus');
+
+            box.style.display = 'block';
+            box.className = 'result-box status-' + data.alert_color; 
+            val.innerText = data.prediction + " mg/dL";
+            status.innerText = data.status;
+
+        } catch (error) {
+            alert("Error connecting to server. Is main.py running?");
+            console.error(error);
+        }
+    }
+
+    // --- 2. BATCH UPLOAD LOGIC ---
+    let myChart = null;
+
+    async function uploadBatch() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) { alert("Please select a file first."); return; }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/predict_batch', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            // Display Panel
+            document.getElementById('metricsPanel').style.display = 'block';
+
+            // Fill Global
+            document.getElementById('mRMSE').innerText = data.metrics.RMSE;
+            document.getElementById('mAcc').innerText = data.metrics.Accuracy;
+
+            // Fill Hypo
+            document.getElementById('mHypoPrec').innerText = data.metrics['Hypo Precision'];
+            document.getElementById('mHypoRec').innerText = data.metrics['Hypo Recall'];
+            document.getElementById('mHypoF1').innerText = data.metrics['Hypo F1'];
+
+            // Fill Hyper
+            document.getElementById('mHyperPrec').innerText = data.metrics['Hyper Precision'];
+            document.getElementById('mHyperRec').innerText = data.metrics['Hyper Recall'];
+            document.getElementById('mHyperF1').innerText = data.metrics['Hyper F1'];
+
+            // Update Chart
+            renderChart(data.timestamps, data.actuals, data.predictions);
+
+        } catch (error) {
+            alert("Error processing file. Check console details.");
+            console.error(error);
+        }
+    }
+
+    function renderChart(labels, actuals, preds) {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        
+        if (myChart) myChart.destroy(); 
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Actual Glucose',
+                        data: actuals,
+                        borderColor: '#2c3e50',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Q-TabM Prediction',
+                        data: preds,
+                        borderColor: '#3498db',
+                        borderWidth: 2,
+                        borderDash: [5, 5], 
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Hypo Limit (70)',
+                        data: Array(labels.length).fill(70),
+                        borderColor: 'red',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    // --- NEW: Added Hyperglycemia Threshold ---
+                    {
+                        label: 'Hyper Limit (180)',
+                        data: Array(labels.length).fill(180),
+                        borderColor: 'orange',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    title: { display: true, text: 'Real-time Prediction Analysis' }
+                },
+                scales: {
+                    y: { title: { display: true, text: 'Glucose (mg/dL)' } }
+                }
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

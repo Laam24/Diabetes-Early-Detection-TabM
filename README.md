@@ -50,8 +50,6 @@ Upload raw patient data (`.xls`/`.csv`) to run the full preprocessing pipeline, 
 4.  **Validation:** Leave-One-Subject-Out (LOSO) cross-validation on 12 patients.
 5.  **Optimization:** Post-Training Quantization (FP16).
 
-![Methodology](figures/proposed_methodology_flowchart.png)
-
 ---
 
 ## 🚀 How to Run Locally
@@ -86,18 +84,21 @@ Upload raw patient data (`.xls`/`.csv`) to run the full preprocessing pipeline, 
 ---
 
 ## 📂 Project Structure
-
-├── data_raw/ # (Not uploaded) Place Shanghai T1DM dataset here
-├── data_processed/ # Generated CSVs
-├── figures/ # Research plots and UI screenshots
-├── models/ # Trained PyTorch models (.pth)
-├── notebooks/ # Jupyter Notebooks for EDA and Training
-├── src/ # Source Code
-│ ├── inference_engine.py # Model definition & metrics
-│ ├── main.py # FastAPI Backend
-│ ├── process_data.py # Data pipeline script
-│ └── quantize.py # Quantization script
-└── web_interface/ # HTML/JS Frontend
+```text
+├── data_raw/          # (Not uploaded) Place Shanghai T1DM dataset here
+├── data_processed/    # Generated CSVs used for training and validation
+├── figures/           # Generated plots, flowcharts, and UI screenshots
+├── models/            # Trained PyTorch models (FP32 baseline and FP16 optimized)
+├── notebooks/         # Complete Research Pipeline (EDA, Training, Validation)
+├── src/               # Source Code
+│   ├── inference_engine.py  # Core model definitions & metric logic
+│   ├── main.py              # FastAPI Backend Server
+│   ├── process_data.py      # Data preprocessing pipeline
+│   ├── train.py             # Training loop script
+│   └── quantize.py          # Quantization script
+├── web_interface/     # Frontend
+│   └── index.html           # Interactive Dashboard (HTML/JS)
+└── requirements.txt   # Project dependencies
 
 ## 📜 Citation & References
 If you use this work, please reference the Shanghai T1DM Dataset and the TabM architecture.

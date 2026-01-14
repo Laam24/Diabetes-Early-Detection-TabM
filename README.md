@@ -99,6 +99,7 @@ Upload raw patient data (`.xls`/`.csv`) to run the full preprocessing pipeline, 
 ├── web_interface/     # Frontend
 │   └── index.html           # Interactive Dashboard (HTML/JS)
 └── requirements.txt   # Project dependencies
+```
 
 ## 📜 Citation & References
 If you use this work, please reference the Shanghai T1DM Dataset and the TabM architecture.
